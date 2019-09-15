@@ -1,0 +1,23 @@
+<resources>
+    <string name="app_name">OrderManagement</string>
+    <string name="order_management_system">Order Management System</string>
+    <string name="please_sign_in_to_continue">Please sign in to continue</string>
+    <string name="username">Username</string>
+    <string name="password">Password</string>
+    <string name="remember_me">Remember Me</string>
+    <string name="login">Login</string>
+    <string name="new_order">New Order</string>
+    <string name="edit_order">Edit Order</string>
+    <string name="order_number">Order Number</string>
+    <string name="order_due_date">Order Due Date</string>
+    <string name="customer_name">Customer Name</string>
+    <string name="customer_phone_number">Customer Phone Number</string>
+    <string name="order_total">Order Total</string>
+    <string name="order_num_errmsg">Please enter valid Order Number</string>
+    <string name="order_due_date_errmsg">Please enter valid Order Due Date</string>
+    <string name="name_errmsg">Please enter valid Name</string>
+    <string name="phone_errmsg">Please enter valid phone number</string>
+    <string name="order_total_errmsg">Please enter valid Order Total</string>
+    <string name="dialog_message">Changes made cannot be reverted.</string>
+    <string name="dialog_title">Are you sure?</string>
+</resources>
