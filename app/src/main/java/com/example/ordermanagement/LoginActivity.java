@@ -59,21 +59,30 @@ public class LoginActivity extends AppCompatActivity {
     @BindView(R.id.passwordEditText)
     EditText passwordEditText;
 
+    HelperMethods helperMethods;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
         getSupportActionBar().hide();
         ButterKnife.bind(this);
-
+        helperMethods = new HelperMethods();
         requestLocationPermission();
     }
 
     @OnClick(R.id.loginBtn)
     public void submit() {
         Toast.makeText(this, "Hrllo", Toast.LENGTH_SHORT).show();
-        showHomeScreen();
+        if (!helperMethods.validateEditText(userNameEditText.getText().toString())) {
+            helperMethods.handleToasts(getString(R.string.username_err_msg), getApplicationContext());
+        } else if (!helperMethods.validateEditText(passwordEditText.getText().toString())) {
+            helperMethods.handleToasts(getString(R.string.password_err_msg), getApplicationContext());
+        } else {
+            showHomeScreen();
+        }
     }
+
 
     public void showHomeScreen() {
         Intent intent = new Intent(this, MainActivity.class);

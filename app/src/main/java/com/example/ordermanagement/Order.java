@@ -1,5 +1,10 @@
 package com.example.ordermanagement;
 
+import com.google.firebase.database.Exclude;
+
+import java.util.HashMap;
+import java.util.Map;
+
 public class Order {
 
     private String orderNum;
@@ -10,6 +15,10 @@ public class Order {
     private String orderTotal;
     private String lat;
     private String lng;
+
+    public Order() {
+
+    }
 
     public Order(String orderNum, String orderDueDate, String customerName, String customerPhoneNumber, String customerAddrs, String orderTotal, String lat, String lng) {
         this.orderNum = orderNum;
@@ -53,4 +62,20 @@ public class Order {
     public String getLng() {
         return lng;
     }
+
+    @Exclude
+    public Map<String, Object> toMap() {
+        HashMap<String, Object> result = new HashMap<>();
+        result.put("orderNum", orderNum);
+        result.put("orderDueDate", orderDueDate);
+        result.put("customerName", customerName);
+        result.put("customerPhoneNumber", customerPhoneNumber);
+        result.put("customerAddrs", customerAddrs);
+        result.put("orderTotal", orderTotal);
+        result.put("lat", lat);
+        result.put("lng", lng);
+
+        return result;
+    }
+
 }

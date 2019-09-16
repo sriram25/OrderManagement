@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
+import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.design.widget.TextInputLayout;
 import android.support.v7.app.AppCompatActivity;
@@ -33,12 +34,18 @@ import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -64,6 +71,9 @@ public class MainActivity extends AppCompatActivity implements IMethodCaller {
     ProgressDialog progress;
     Geocoder geocoder;
     List<Address> addresses;
+    FirebaseDatabase database;
+    DatabaseReference myRef;
+    HelperMethods helperMethods;
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -103,10 +113,18 @@ public class MainActivity extends AppCompatActivity implements IMethodCaller {
 
         geocoder = new Geocoder(this, Locale.getDefault());
 
-        loadData();
+        // Write a message to the database
+        database = FirebaseDatabase.getInstance();
+        myRef = database.getReference("myDB").child("orders");
+
+        helperMethods = new HelperMethods();
+
+        showLoader("Loading Data...");
+        fetchData();
 
     }
 
+    // displays progress dialog
     public void showLoader(String msg) {
         if(progress == null) {
             progress = new ProgressDialog(this);
@@ -117,19 +135,50 @@ public class MainActivity extends AppCompatActivity implements IMethodCaller {
         }
     }
 
-    public void loadData() {
+    // stores data in firebase
+    public void storeData(Order order) {
 
-        Order order = new Order("123", "25-09-2019", "Sriram", "0987654321", "K P H B Phase 9, Kukatpally, Hyderabad, Telangana 500085", "250", "17.123123", "78.123123");
-
-        for (int i = 0; i < 5 ; i++) {
-            orderList.add(order);
-        }
-
+        orderList.add(order);
+        myRef.setValue(orderList);
         mAdapter.notifyDataSetChanged();
 
     }
 
-    public void openNewOrderAlert(String type, final Order oldOrder) {
+    // fetches data from firebase
+    public void fetchData() {
+
+        // Read from the database
+        myRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+
+                progress.dismiss();
+                orderList.clear();
+
+                // This method is called once with the initial value and again
+                for (DataSnapshot postSnapshot: dataSnapshot.getChildren()) {
+                    // TODO: handle the post
+                    Order order1 = postSnapshot.getValue(Order.class);
+                    assert order1 != null;
+                    Log.d("TAG", order1.getCustomerName());
+                    orderList.add(order1);
+                }
+
+                mAdapter.notifyDataSetChanged();
+
+            }
+
+            @Override
+            public void onCancelled(DatabaseError error) {
+                // Failed to read value
+                Log.w(TAG, "Failed to read value.", error.toException());
+            }
+        });
+
+    }
+
+    // opens alert dialog for new order and edit order.
+    public void openNewOrderAlert(final String type, final int pos) {
         final View dialogView = alertInflater.inflate(R.layout.neworder_dialog, null);
         dialogBuilder.setView(dialogView);
 
@@ -140,8 +189,12 @@ public class MainActivity extends AppCompatActivity implements IMethodCaller {
         final EditText orderTotalEditText = dialogView.findViewById(R.id.orderTotalEditText);
         final TextView title = dialogView.findViewById(R.id.title);
 
+
+        orderNumberEditText.setEnabled(false);
+
         if (!type.equalsIgnoreCase("new")) {
             title.setText(getString(R.string.edit_order));
+            Order oldOrder = orderList.get(pos);
             if (!oldOrder.getOrderNum().isEmpty()) {
                 nameEditText.setText(oldOrder.getCustomerName());
                 phoneEditText.setText(oldOrder.getCustomerPhoneNumber());
@@ -151,6 +204,8 @@ public class MainActivity extends AppCompatActivity implements IMethodCaller {
             }
         } else {
             title.setText(getString(R.string.new_order));
+            long millis = new Date().getTime();
+            orderNumberEditText.setText(String.valueOf(millis));
         }
 
         dialogBuilder.setPositiveButton("Done", new DialogInterface.OnClickListener() {
@@ -175,33 +230,47 @@ public class MainActivity extends AppCompatActivity implements IMethodCaller {
                 String orderDueDateValue = orderDueDateEditText.getText().toString();
                 String orderTotalValue = orderTotalEditText.getText().toString();
 
-                if (!validateEditText(orderNumValue) ) {
-                    //Don't dismiss
-                    handleToasts(getString(R.string.order_num_errmsg));
-                } else if (!validateEditText(orderDueDateValue) ) {
-                    //Don't dismiss
-                    handleToasts(getString(R.string.order_due_date_errmsg));
-                } else if (!validateEditText(nameValue) ) {
-                    //Don't dismiss
-                    handleToasts(getString(R.string.name_errmsg));
-                } else if (!validateEditText(phoneValue)) {
-                    handleToasts(getString(R.string.phone_errmsg));
-                } else if (!validateEditText(orderTotalValue)){
-                    handleToasts(getString(R.string.order_total_errmsg));
+                if (!helperMethods.validateEditText(orderNumValue) ) {
+                    helperMethods.handleToasts(getString(R.string.order_num_errmsg), getApplicationContext());
+                } else if (!helperMethods.validateEditText(orderDueDateValue) ) {
+                    helperMethods.handleToasts(getString(R.string.order_due_date_errmsg), getApplicationContext());
+                } else if (!helperMethods.validateEditText(nameValue) ) {
+                    helperMethods.handleToasts(getString(R.string.name_errmsg), getApplicationContext());
+                } else if (!helperMethods.validateEditText(phoneValue)) {
+                    helperMethods.handleToasts(getString(R.string.phone_errmsg), getApplicationContext());
+                } else if (!helperMethods.validateEditText(orderTotalValue)){
+                    helperMethods.handleToasts(getString(R.string.order_total_errmsg), getApplicationContext());
                 } else{
 
-                    Order order = new Order(
-                            orderNumValue,
-                            orderDueDateValue,
-                            nameValue,
-                            phoneValue,
-                            adddress,
-                            orderTotalValue,
-                            Float.toString(lat),
-                            Float.toString(lng)
-                    );
+                    if (!type.equalsIgnoreCase("new")) {
+                        Order oldOrder = orderList.get(pos);
+                        Order order = new Order(
+                                orderNumValue,
+                                orderDueDateValue,
+                                nameValue,
+                                phoneValue,
+                                oldOrder.getCustomerAddrs(),
+                                orderTotalValue,
+                                oldOrder.getLat(),
+                                oldOrder.getLng()
+                        );
+                        orderList.set(pos, order);
+                        myRef.child(String.valueOf(pos)).updateChildren(order.toMap());
+                    } else {
+                        Order order = new Order(
+                                orderNumValue,
+                                orderDueDateValue,
+                                nameValue,
+                                phoneValue,
+                                adddress,
+                                orderTotalValue,
+                                Float.toString(lat),
+                                Float.toString(lng)
+                        );
+                        storeData(order);
+                        orderList.add(order);
+                    }
 
-                    orderList.add(order);
                     mAdapter.notifyDataSetChanged();
 
                     b.dismiss();
@@ -210,28 +279,10 @@ public class MainActivity extends AppCompatActivity implements IMethodCaller {
         });
     }
 
-    private void handleToasts(String msg) {
-        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
-    }
-
-    private Boolean validateEditText(String str) {
-        if (str.isEmpty()) {
-            return false;
-        }
-        return true;
-    }
-
-    /**
-     * Gets the current location of the device, and positions the map's camera.
-     */
+    // fetches current location
     private void getDeviceLocation() {
-        /*
-         * Get the best and most recent location of the device, which may be null in rare
-         * cases when a location is not available.
-         */
         try {
             if (mFusedLocationProviderClient == null) {
-                // Construct a FusedLocationProviderClient.
                 mFusedLocationProviderClient = LocationServices.getFusedLocationProviderClient(this);
             }
             Task<Location> locationResult = mFusedLocationProviderClient.getLastLocation();
@@ -239,9 +290,7 @@ public class MainActivity extends AppCompatActivity implements IMethodCaller {
                 @Override
                 public void onComplete(@NonNull Task<Location> task) {
                     if (task.isSuccessful()) {
-                        // Set the map's camera position to the current location of the device.
                         mLastKnownLocation = task.getResult();
-//                        Log.d("Location", "my location is " + mLastKnownLocation.getLatitude() + ", " + mLastKnownLocation.getLongitude());
                         lat = (float) mLastKnownLocation.getLatitude();
                         lng = (float) mLastKnownLocation.getLongitude();
                         if (mLastKnownLocation != null) {
@@ -260,13 +309,14 @@ public class MainActivity extends AppCompatActivity implements IMethodCaller {
         }
     }
 
+    // fetches address from latlng
     private void getAddress(LatLng latLng) {
         try {
             addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1);
             String city = addresses.get(0).getLocality();
             String country = addresses.get(0).getCountryName();
             adddress = city + ", " + country;
-            openNewOrderAlert("new", new Order("", "", "", "", "", "", "", ""));
+            openNewOrderAlert("new", 0);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -286,16 +336,15 @@ public class MainActivity extends AppCompatActivity implements IMethodCaller {
         }
     }
 
+    // shows confirmation alert dialog
     private void showConfirmationAlert(final int pos) {
         AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this);
-        //Uncomment the below code to Set the message and title from the strings.xml file
         dialogBuilder.setMessage(R.string.dialog_message) .setTitle(R.string.dialog_title);
-
-        //Setting message manually and performing action on button click
         dialogBuilder
                 .setCancelable(false)
                 .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
+                        myRef.child(String.valueOf(pos)).removeValue();
                         orderList.remove(pos);
                         mAdapter.notifyDataSetChanged();
                     }
@@ -305,20 +354,31 @@ public class MainActivity extends AppCompatActivity implements IMethodCaller {
                         dialog.cancel();
                     }
                 });
-        //Creating dialog box
         AlertDialog alert = dialogBuilder.create();
-        //Setting the title manually
-//        alert.setTitle("AlertDialogExample");
         alert.show();
     }
 
+    // Opens Google Maps with given location.
+    public void openGoogleMaps(Order order) {
+        String strUri = "http://maps.google.com/maps?q=loc:" + Float.parseFloat(order.getLat()) + "," + Float.parseFloat(order.getLng()) + " (" + "Label which you want" + ")";
+        Intent intent = new Intent(android.content.Intent.ACTION_VIEW, Uri.parse(strUri));
+        intent.setClassName("com.google.android.apps.maps", "com.google.android.maps.MapsActivity");
+        startActivity(intent);
+    }
+
     @Override
-    public void openEditOrderDialog(Order order) {
-        openNewOrderAlert("edit", order);
+    public void openEditOrderDialog(int pos) {
+        openNewOrderAlert("edit", pos);
     }
 
     @Override
     public void deleteOrder(int pos) {
         showConfirmationAlert(pos);
     }
+
+    @Override
+    public void opemGoogleMaps(Order order) {
+        openGoogleMaps(order);
+    }
+
 }

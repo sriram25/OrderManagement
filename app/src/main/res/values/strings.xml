@@ -20,4 +20,6 @@
     <string name="order_total_errmsg">Please enter valid Order Total</string>
     <string name="dialog_message">Changes made cannot be reverted.</string>
     <string name="dialog_title">Are you sure?</string>
+    <string name="username_err_msg">Please enter valid username</string>
+    <string name="password_err_msg">Please enter valid password</string>
 </resources>

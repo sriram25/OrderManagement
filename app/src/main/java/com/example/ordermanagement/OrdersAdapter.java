@@ -37,7 +37,7 @@ public class OrdersAdapter extends RecyclerView.Adapter<OrdersAdapter.MyViewHold
         final int index = i;
         final Order order = orderList.get(index);
 
-        myViewHolder.orderNum.setText("Order Number: " + order.getOrderNum());
+        myViewHolder.orderNum.setText("Order No. : " + order.getOrderNum());
         myViewHolder.orderDueDate.setText("Due Date: " + order.getOrderDueDate());
         myViewHolder.customerName.setText(new StringBuilder().append(order.getCustomerName()).append(", ").append(order.getCustomerPhoneNumber()).toString());
         myViewHolder.customerAddrs.setText(order.getCustomerAddrs());
@@ -47,7 +47,7 @@ public class OrdersAdapter extends RecyclerView.Adapter<OrdersAdapter.MyViewHold
             @Override
             public void onClick(View view) {
                 if (mContext != null) {
-                    ((IMethodCaller) mContext).openEditOrderDialog(order);
+                    ((IMethodCaller) mContext).openEditOrderDialog(index);
                 }
             }
         });
@@ -57,6 +57,15 @@ public class OrdersAdapter extends RecyclerView.Adapter<OrdersAdapter.MyViewHold
             public void onClick(View view) {
                 if (mContext != null) {
                     mContext.deleteOrder(index);
+                }
+            }
+        });
+
+        myViewHolder.mapsImgView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (mContext != null) {
+                    mContext.opemGoogleMaps(order);
                 }
             }
         });
@@ -71,7 +80,7 @@ public class OrdersAdapter extends RecyclerView.Adapter<OrdersAdapter.MyViewHold
     class MyViewHolder extends RecyclerView.ViewHolder {
 
         TextView orderNum, orderDueDate, customerName, customerAddrs, orderTotal;
-        ImageView editImgView, deleteImgView;
+        ImageView editImgView, deleteImgView, mapsImgView;
 
         MyViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -83,6 +92,7 @@ public class OrdersAdapter extends RecyclerView.Adapter<OrdersAdapter.MyViewHold
             orderTotal = itemView.findViewById(R.id.orderTotal);
             editImgView = itemView.findViewById(R.id.edit);
             deleteImgView = itemView.findViewById(R.id.delete);
+            mapsImgView = itemView.findViewById(R.id.maps);
 
         }
     }

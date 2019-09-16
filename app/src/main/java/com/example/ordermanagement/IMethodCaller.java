@@ -1,6 +1,7 @@
 package com.example.ordermanagement;
 
 public interface IMethodCaller {
-    void openEditOrderDialog(Order order);
+    void openEditOrderDialog(int pos);
     void deleteOrder(int pos);
+    void opemGoogleMaps(Order order);
 }
